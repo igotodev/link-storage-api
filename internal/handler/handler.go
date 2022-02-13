@@ -6,15 +6,16 @@ import (
 	"github.com/go-chi/chi/v5"
 	"link-storage-api/internal/service"
 	"link-storage-api/internal/storage/model"
-	"log"
+	"link-storage-api/pkg/logger"
 	"net/http"
 	"strconv"
 	"time"
 )
 
 type Handler struct {
-	router  *chi.Mux
-	service service.ServiceImpl
+	router    *chi.Mux
+	service   service.ServiceImpl
+	appLogger *logger.Logger
 }
 
 type answer struct {
@@ -25,8 +26,12 @@ type answerError struct {
 	Message string `json:"message"`
 }
 
-func NewHandler(router *chi.Mux, service service.ServiceImpl) *Handler {
-	return &Handler{router: router, service: service}
+func NewHandler(router *chi.Mux, service service.ServiceImpl, appLogger *logger.Logger) *Handler {
+	return &Handler{
+		router:    router,
+		service:   service,
+		appLogger: appLogger,
+	}
 }
 
 func (h *Handler) RegisterRouting() *chi.Mux {
@@ -54,8 +59,8 @@ func (h *Handler) link() http.HandlerFunc {
 
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			errorBadRequest(w)
-			log.Println(err)
+			errorBadRequest(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -64,15 +69,15 @@ func (h *Handler) link() http.HandlerFunc {
 
 		link, err := h.service.Link(ctx, id)
 		if err != nil {
-			errorNotFound(w)
-			log.Println(err)
+			errorNotFound(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
 		err = json.NewEncoder(w).Encode(link)
 		if err != nil {
-			errorInternalError(w)
-			log.Println(err)
+			errorInternalError(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -87,15 +92,15 @@ func (h *Handler) allLinks() http.HandlerFunc {
 
 		links, err := h.service.AllLinks(ctx)
 		if err != nil {
-			errorNotFound(w)
-			log.Println(err)
+			errorNotFound(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
 		err = json.NewEncoder(w).Encode(links)
 		if err != nil {
-			errorInternalError(w)
-			log.Println(err)
+			errorInternalError(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -112,15 +117,15 @@ func (h *Handler) addLink() http.HandlerFunc {
 
 		err := json.NewDecoder(req.Body).Decode(&link)
 		if err != nil {
-			errorBadRequest(w)
-			log.Println(err)
+			errorBadRequest(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
 		linkID, err := h.service.AddLink(ctx, link)
 		if err != nil {
-			errorConflict(w)
-			log.Println(err)
+			errorConflict(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -128,8 +133,8 @@ func (h *Handler) addLink() http.HandlerFunc {
 
 		err = json.NewEncoder(w).Encode(answ)
 		if err != nil {
-			errorInternalError(w)
-			log.Println(err)
+			errorInternalError(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -143,8 +148,8 @@ func (h *Handler) updateLink() http.HandlerFunc {
 
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			errorBadRequest(w)
-			log.Println(err)
+			errorBadRequest(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -152,8 +157,8 @@ func (h *Handler) updateLink() http.HandlerFunc {
 
 		err = json.NewDecoder(req.Body).Decode(&link)
 		if err != nil {
-			errorBadRequest(w)
-			log.Println(err)
+			errorBadRequest(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -164,8 +169,8 @@ func (h *Handler) updateLink() http.HandlerFunc {
 
 		idFromDB, err := h.service.UpdateLink(ctx, link)
 		if err != nil {
-			errorConflict(w)
-			log.Println(err)
+			errorConflict(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -173,8 +178,8 @@ func (h *Handler) updateLink() http.HandlerFunc {
 
 		err = json.NewEncoder(w).Encode(answ)
 		if err != nil {
-			errorInternalError(w)
-			log.Println(err)
+			errorInternalError(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -188,8 +193,8 @@ func (h *Handler) deleteLink() http.HandlerFunc {
 
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			errorBadRequest(w)
-			log.Println(err)
+			errorBadRequest(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -198,8 +203,8 @@ func (h *Handler) deleteLink() http.HandlerFunc {
 
 		err = h.service.DeleteLink(ctx, id)
 		if err != nil {
-			errorNotFound(w)
-			log.Println(err)
+			errorNotFound(w, h.appLogger)
+			h.appLogger.Info(err)
 			return
 		}
 
@@ -207,7 +212,7 @@ func (h *Handler) deleteLink() http.HandlerFunc {
 	}
 }
 
-func errorBadRequest(w http.ResponseWriter) {
+func errorBadRequest(w http.ResponseWriter, appLogger *logger.Logger) {
 	w.WriteHeader(400)
 
 	answ := answerError{
@@ -216,12 +221,12 @@ func errorBadRequest(w http.ResponseWriter) {
 
 	err := json.NewEncoder(w).Encode(answ)
 	if err != nil {
-		log.Println(err)
+		appLogger.Info(err)
 		return
 	}
 }
 
-func errorNotFound(w http.ResponseWriter) {
+func errorNotFound(w http.ResponseWriter, appLogger *logger.Logger) {
 	w.WriteHeader(404)
 
 	answ := answerError{
@@ -230,12 +235,12 @@ func errorNotFound(w http.ResponseWriter) {
 
 	err := json.NewEncoder(w).Encode(answ)
 	if err != nil {
-		log.Println(err)
+		appLogger.Info(err)
 		return
 	}
 }
 
-func errorInternalError(w http.ResponseWriter) {
+func errorInternalError(w http.ResponseWriter, appLogger *logger.Logger) {
 	w.WriteHeader(500)
 
 	answ := answerError{
@@ -244,12 +249,12 @@ func errorInternalError(w http.ResponseWriter) {
 
 	err := json.NewEncoder(w).Encode(answ)
 	if err != nil {
-		log.Println(err)
+		appLogger.Info(err)
 		return
 	}
 }
 
-func errorConflict(w http.ResponseWriter) {
+func errorConflict(w http.ResponseWriter, appLogger *logger.Logger) {
 
 	w.WriteHeader(409)
 
@@ -259,7 +264,7 @@ func errorConflict(w http.ResponseWriter) {
 
 	err := json.NewEncoder(w).Encode(answ)
 	if err != nil {
-		log.Println(err)
+		appLogger.Info(err)
 		return
 	}
 }
