@@ -26,8 +26,8 @@ func (s *Service) AllLinks(ctx context.Context) ([]model.Link, error) {
 	return s.storage.SelectAllLinks(ctx)
 }
 
-func (s *Service) UpdateLink(ctx context.Context, id int) error {
-	return s.storage.UpdateLink(ctx, id)
+func (s *Service) UpdateLink(ctx context.Context, link model.Link) (int, error) {
+	return s.storage.UpdateLink(ctx, link)
 }
 
 func (s *Service) DeleteLink(ctx context.Context, id int) error {
