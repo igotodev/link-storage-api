@@ -14,13 +14,15 @@ import (
 
 func main() {
 	cfg := config.GetConfig()
-	appLogger := logger.GetLogger()
+	appLogger := logger.NewLogger()
 	appLogger.Info("application is started")
 
 	addr := cfg.Listen.BindIP + ":" + cfg.Listen.Port
-	mux := router.Router(addr)
+	mux := router.Router(appLogger)
 
 	myDB := psql.NewPSLQ(cfg)
+	defer myDB.Close()
+
 	storage := db.NewStorage(myDB)
 	appService := service.NewService(storage)
 

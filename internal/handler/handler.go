@@ -74,14 +74,14 @@ func (h *Handler) link() http.HandlerFunc {
 			return
 		}
 
+		w.WriteHeader(200)
+
 		err = json.NewEncoder(w).Encode(link)
 		if err != nil {
 			errorInternalError(w, h.appLogger)
 			h.appLogger.Info(err)
 			return
 		}
-
-		w.WriteHeader(200)
 	}
 }
 
@@ -97,14 +97,14 @@ func (h *Handler) allLinks() http.HandlerFunc {
 			return
 		}
 
+		w.WriteHeader(200)
+
 		err = json.NewEncoder(w).Encode(links)
 		if err != nil {
 			errorInternalError(w, h.appLogger)
 			h.appLogger.Info(err)
 			return
 		}
-
-		w.WriteHeader(200)
 	}
 }
 
@@ -131,14 +131,14 @@ func (h *Handler) addLink() http.HandlerFunc {
 
 		answ := answer{ID: linkID}
 
+		w.WriteHeader(200)
+
 		err = json.NewEncoder(w).Encode(answ)
 		if err != nil {
 			errorInternalError(w, h.appLogger)
 			h.appLogger.Info(err)
 			return
 		}
-
-		w.WriteHeader(200)
 	}
 }
 
@@ -176,14 +176,14 @@ func (h *Handler) updateLink() http.HandlerFunc {
 
 		answ := answer{ID: idFromDB}
 
+		w.WriteHeader(200)
+
 		err = json.NewEncoder(w).Encode(answ)
 		if err != nil {
 			errorInternalError(w, h.appLogger)
 			h.appLogger.Info(err)
 			return
 		}
-
-		w.WriteHeader(200)
 	}
 }
 
@@ -201,14 +201,14 @@ func (h *Handler) deleteLink() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
+		w.WriteHeader(204)
+
 		err = h.service.DeleteLink(ctx, id)
 		if err != nil {
 			errorNotFound(w, h.appLogger)
 			h.appLogger.Info(err)
 			return
 		}
-
-		w.WriteHeader(204)
 	}
 }
 

@@ -56,6 +56,8 @@ func (s *Storage) SelectAllLinks(ctx context.Context) ([]model.Link, error) {
 
 	var links []model.Link
 
+	defer query.Close()
+
 	for query.Next() {
 		var link model.Link
 
