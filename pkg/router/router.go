@@ -51,13 +51,12 @@ func loggerMiddleware(logger *logger.Logger) func(h http.Handler) http.Handler {
 					scheme = "https"
 				}
 				fields := logrus.Fields{
-					"status_code":      ww.Status(),
-					"bytes":            ww.BytesWritten(),
-					"duration":         time.Since(t1).String(),
-					"duration_display": time.Since(t1).String(),
-					"remote_ip":        remoteIP,
-					"proto":            r.Proto,
-					"method":           r.Method,
+					"status_code": ww.Status(),
+					"bytes":       ww.BytesWritten(),
+					"duration":    time.Since(t1).String(),
+					"remote_ip":   remoteIP,
+					"proto":       r.Proto,
+					"method":      r.Method,
 				}
 				if len(reqID) > 0 {
 					fields["request_id"] = reqID
