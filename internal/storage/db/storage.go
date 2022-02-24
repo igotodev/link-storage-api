@@ -97,3 +97,39 @@ func (s *Storage) DeleteLink(ctx context.Context, id int) error {
 
 	return nil
 }
+
+func (s *Storage) CreateUser(ctx context.Context, user model.User) (int, error) {
+	row := s.db.QueryRowContext(ctx, `INSERT INTO users (username, password, active) VALUES ($1, $2, $3) returning id`,
+		user.Username, user.PasswordHash, user.Active)
+
+	if err := row.Err(); err != nil {
+		return 0, err
+	}
+
+	var id int
+
+	err := row.Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
+func (s *Storage) SelectUser(ctx context.Context, username string, passwordHash string) (model.User, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT * FROM users WHERE username=$1 AND password=$2`,
+		username, passwordHash)
+
+	if err := row.Err(); err != nil {
+		return model.User{}, err
+	}
+
+	var user model.User
+
+	err := row.Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Active)
+	if err != nil {
+		return model.User{}, err
+	}
+
+	return user, nil
+}

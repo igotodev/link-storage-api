@@ -33,3 +33,11 @@ func (s *Service) UpdateLink(ctx context.Context, link model.Link) (int, error) 
 func (s *Service) DeleteLink(ctx context.Context, id int) error {
 	return s.storage.DeleteLink(ctx, id)
 }
+
+func (s *Service) AddUser(ctx context.Context, user model.User) (int, error) {
+	return s.storage.CreateUser(ctx, user)
+}
+
+func (s *Service) User(ctx context.Context, username string, passwordHash string) (model.User, error) {
+	return s.storage.SelectUser(ctx, username, passwordHash)
+}

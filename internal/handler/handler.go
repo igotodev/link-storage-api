@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth"
 	"link-storage-api/internal/service"
 	"link-storage-api/internal/storage/model"
 	"link-storage-api/pkg/logger"
@@ -22,8 +23,17 @@ type answer struct {
 	ID int `json:"id"`
 }
 
+type tokenAnswer struct {
+	Token string `json:"token"`
+}
+
 type answerError struct {
 	Message string `json:"message"`
+}
+
+type userReq struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func NewHandler(router *chi.Mux, service service.ServiceImpl, appLogger *logger.Logger) *Handler {
@@ -36,12 +46,13 @@ func NewHandler(router *chi.Mux, service service.ServiceImpl, appLogger *logger.
 
 func (h *Handler) RegisterRouting() *chi.Mux {
 	h.router.Route("/auth", func(r chi.Router) {
-		r.Post("/sign-in", nil)
-		r.Post("/sign-up", nil)
+		r.Post("/sign-in", h.addContentType(h.User()))
+		r.Post("/sign-up", h.addContentType(h.AddUser()))
 	})
 
 	h.router.Route("/api/v1/link/", func(r chi.Router) {
-		//r.Use() Auth jwt
+		r.Use(jwtauth.Verifier(tokenAuth))
+		r.Use(jwtauth.Authenticator)
 
 		r.Get("/{id}", h.addContentType(h.link()))
 		r.Get("/", h.addContentType(h.allLinks()))
@@ -206,6 +217,93 @@ func (h *Handler) deleteLink() http.HandlerFunc {
 		err = h.service.DeleteLink(ctx, id)
 		if err != nil {
 			errorNotFound(w, h.appLogger)
+			h.appLogger.Info(err)
+			return
+		}
+	}
+}
+
+func (h *Handler) AddUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		var userReq userReq
+
+		err := json.NewDecoder(req.Body).Decode(&userReq)
+		if err != nil {
+			errorBadRequest(w, h.appLogger)
+			h.appLogger.Info(err)
+			return
+		}
+
+		var user model.User
+
+		user.Username = userReq.Username
+		user.PasswordHash, err = generatePasswordHash(userReq.Password)
+		if err != nil {
+			errorInternalError(w, h.appLogger)
+			h.appLogger.Info(err)
+			return
+		}
+		user.Active = true
+
+		defer req.Body.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		id, err := h.service.AddUser(ctx, user)
+		if err != nil {
+			errorNotFound(w, h.appLogger)
+			h.appLogger.Info(err)
+			return
+		}
+
+		w.WriteHeader(200)
+
+		jwt := generateJWT(id)
+		ta := tokenAnswer{Token: jwt}
+
+		err = json.NewEncoder(w).Encode(ta)
+		if err != nil {
+			errorInternalError(w, h.appLogger)
+			h.appLogger.Info(err)
+			return
+		}
+	}
+}
+
+func (h *Handler) User() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		var userReq userReq
+
+		err := json.NewDecoder(req.Body).Decode(&userReq)
+		if err != nil {
+			errorBadRequest(w, h.appLogger)
+			h.appLogger.Info(err)
+			return
+		}
+
+		defer req.Body.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		user, err := h.service.User(ctx, userReq.Username, userReq.Password)
+		if err != nil && user.ID != 0 {
+			errorNotFound(w, h.appLogger)
+			h.appLogger.Info(err)
+			return
+		}
+
+		w.WriteHeader(200)
+
+		jwt := generateJWT(user.ID)
+		ta := tokenAnswer{Token: jwt}
+
+		err = json.NewEncoder(w).Encode(ta)
+		if err != nil {
+			errorInternalError(w, h.appLogger)
 			h.appLogger.Info(err)
 			return
 		}
