@@ -99,8 +99,8 @@ func (s *Storage) DeleteLink(ctx context.Context, id int) error {
 }
 
 func (s *Storage) CreateUser(ctx context.Context, user model.User) (int, error) {
-	row := s.db.QueryRowContext(ctx, `INSERT INTO users (username, password, active) VALUES ($1, $2, $3) returning id`,
-		user.Username, user.PasswordHash, user.Active)
+	row := s.db.QueryRowContext(ctx, `INSERT INTO users (username, password, email, active) VALUES ($1, $2, $3, $4) returning id`,
+		user.Username, user.PasswordHash, user.Email, user.Active)
 
 	if err := row.Err(); err != nil {
 		return 0, err

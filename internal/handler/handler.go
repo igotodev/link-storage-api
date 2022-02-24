@@ -34,6 +34,7 @@ type answerError struct {
 type userReq struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
 func NewHandler(router *chi.Mux, service service.ServiceImpl, appLogger *logger.Logger) *Handler {
@@ -244,6 +245,7 @@ func (h *Handler) AddUser() http.HandlerFunc {
 			h.appLogger.Info(err)
 			return
 		}
+		user.Email = userReq.Email
 		user.Active = true
 
 		defer req.Body.Close()
@@ -252,7 +254,7 @@ func (h *Handler) AddUser() http.HandlerFunc {
 		defer cancel()
 
 		id, err := h.service.AddUser(ctx, user)
-		if err != nil {
+		if err != nil || id == 0 {
 			errorNotFound(w, h.appLogger)
 			h.appLogger.Info(err)
 			return
@@ -290,7 +292,7 @@ func (h *Handler) User() http.HandlerFunc {
 		defer cancel()
 
 		user, err := h.service.User(ctx, userReq.Username, userReq.Password)
-		if err != nil && user.ID != 0 {
+		if err != nil || user.ID != 0 {
 			errorNotFound(w, h.appLogger)
 			h.appLogger.Info(err)
 			return

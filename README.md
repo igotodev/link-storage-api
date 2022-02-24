@@ -1,5 +1,75 @@
 # link-storage-api
+
 simple link storage rest api with chi router
+
+## Authorization
+
+All the methods in the API protected by JWT.
+
+We must send `Authorization: Bearer <token>` in Header.
+
+### POST
+
+To create user and get authorization token we should use this request:
+
+`POST /auth/sign-up`
+
+and send username, password and email, like that:
+
+```
+{
+    "username": "test2",
+    "password": "test1234",
+    "email": "test2@test.test"
+}
+```
+
+If all fields are correct we will get 200 OK and response with new token:
+
+```
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+Vary: Origin
+Date: Thu, 24 Feb 2022 13:54:18 GMT
+Content-Length: 128
+
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NDU3NTUyNDEsImlkIjozfQ.4qrgq_xkq7JsNvU8CdLc2zNTqIgBK5sZnS47-lgktXI"
+}
+```
+
+If something went wrong we will get 404 Not Found or 400 Bad Request
+
+To get authorization token we should use this request:
+
+`POST /auth/sign-in`
+
+and send username and password, like that:
+
+```
+{
+    "username": "test2",
+    "password": "test1234"
+}
+```
+
+If user and password are correct we will get 200 OK and response with new token:
+
+```
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: application/json
+Vary: Origin
+Date: Thu, 24 Feb 2022 13:57:21 GMT
+Content-Length: 128
+
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NDU3NTUyNDEsImlkIjozfQ.4qrgq_xkq7JsNvU8CdLc2zNTqIgBK5sZnS47-lgktXI"
+}
+```
+
+If username or password or request is not correct we will get 404 Not Found or 400 Bad Request
 
 ## Links
 
@@ -63,6 +133,7 @@ If request is not correct we will get 400 Bad Request or 404 Not Found with the 
   "message": "bad request"
 }
 ```
+
 or
 
 ```
@@ -84,6 +155,7 @@ We need to send:
   "url": "https://microsoft.com"
 }
 ```
+
 Response:
 
 ```
@@ -140,6 +212,7 @@ Content-Length: 9
 `DELETE /api/v1/link/{id}` - to delete a link
 
 Response:
+
 ```
 HTTP/1.1 204 No Content
 Access-Control-Allow-Origin: *
